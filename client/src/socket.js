@@ -1,8 +1,9 @@
 import { io } from "socket.io-client";
 
-const URL = "http://localhost:3000/chat";
+const URL = "https://localhost:12345/chat";
 const socket = io(URL, { 
   autoConnect: true,
+  secure : true,
 });
 
 socket.onAny((event, ...args) => {
