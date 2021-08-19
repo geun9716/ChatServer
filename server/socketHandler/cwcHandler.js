@@ -26,15 +26,17 @@ module.exports = async(io, socket) => {
     socket.profile = data.profile;
     socket.room = data.room;
     socket.isAdmin = data.isAdmin?data.isAdmin:0;
-    
+    console.log('room : '+socket.room);
+
     socket.join(socket.room);
     //room 정보 변경
-    const usernum = await roomStore.joinUsersRoom(socket.room, {
+    await roomStore.joinUsersRoom(socket.room, {
       username : socket.username, 
       profile : socket.profile, 
       isAdmin : socket.isAdmin
     });
-    console.log(usernum);
+    const usernum = await roomStore.getUsersNum(socket.room);
+    console.log(`usernum : ${usernum}`);
 
     const messages = await roomStore.findMessagesForRoom(socket.room);
     //자신이 속한 room Set을 반환 Set은 socketId를 갖고 있음.
@@ -48,7 +50,7 @@ module.exports = async(io, socket) => {
     
     socket.to(socket.room).emit('user joined', {
       username : socket.username,
-      userNum : usernum[1],
+      userNum : usernum,
     });
   }
 

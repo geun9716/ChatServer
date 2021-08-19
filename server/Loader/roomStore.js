@@ -36,20 +36,30 @@ class RedisRoomStore extends RoomStore {
       nextIndex = parseInt(nextIndexAsStr, 10);
       results.forEach((s) => keys.add(s));
     } while (nextIndex !== 0);
-    
-    //room 정보 가져오기
+
+    // room 정보 가져오기
     const commands = [];
     keys.forEach((key) => {
-      commands.push(['hmget', key, "roomID", "roomname", "usernum"]);
+      commands.push(['hgetall', key]);
+      commands.push(['scard', `user:${key.substring(5)}`]);
     });
+
     return this.redisClient
       .multi(commands)
       .exec()
       .then((results) => {
-        return results
-          .map(([err, room]) => (err ? undefined : mapRoom(room)))
-          .filter((v) => !!v);
-      });
+        const rooms = [];
+        while (results.length > 0){
+          const roominfo = results.shift()[1];
+          const usernum = results.shift()[1];
+          roominfo['usernum'] = usernum;
+          rooms.push(roominfo);
+        }
+        return rooms;
+      }).catch((err)=>{
+        console.log(err);
+        return 0;
+      })
   }
 
   findRoom = async(id) => {
@@ -78,41 +88,35 @@ class RedisRoomStore extends RoomStore {
       .exec();
   }
 
-  getUsersRoom(roomID){
+  getUsersRoom(roomID=1){
     return this.redisClient
-      .smembers(`users:${roomID}`)
+      .smembers(`user:${roomID}`)
       .then((result)=>{
         return result.map((result)=> JSON.parse(result));
       })
   }
   
-  getUsersNum = (roomID)=>{ 
-    return this.redisClient.scard(`users:${roomID}`);
+  getUsersNum = (roomID=1)=>{ 
+    return this.redisClient.scard(`user:${roomID}`,(err, result)=>{
+      return result;
+    });
   }
   
   joinUsersRoom(roomID, user){
     const value = JSON.stringify(user);
     return this.redisClient
       .multi()
-      .hincrby(`room:${roomID}`, 'usernum', 1)
       .sadd(`user:${roomID}`, value)
       .expire(`user:${roomID}`, CONVERSATION_TIL)
-      .exec()
-      .then((results)=>{
-        return results[0];
-      });
+      .exec();
   }
 
   leaveUsersRoom = async(roomID, user) => {
     const value = JSON.stringify(user);
     return this.redisClient
       .multi()
-      .hincrby(`room:${roomID}`, 'usernum', -1)
       .srem(`user:${roomID}`, value)
-      .exec()
-      .then((result)=>{
-        return result[0];
-      });
+      .exec();
   }
 }
 
