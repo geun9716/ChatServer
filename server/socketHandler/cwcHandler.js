@@ -20,57 +20,51 @@ module.exports = async(io, socket) => {
     userID: socket.userID,
   });
 
-  const connect = async(data) => {
-    // we store the username in the socket session for this client
-    socket.username = data.username;
-    socket.profile = data.profile;
-    socket.room = data.room;
-    socket.isAdmin = data.isAdmin?data.isAdmin:0;
+  const connect = async({room, data}) => {
+    // we store the data in the socket session for this client
+    socket.room = room;
+    socket.info = data;
+    
     console.log('room : '+socket.room);
-
+    console.log(JSON.stringify(socket.info));
+    //join room
     socket.join(socket.room);
-    //room 정보 변경
-    await roomStore.joinUsersRoom(socket.room, {
-      username : socket.username, 
-      profile : socket.profile, 
-      isAdmin : socket.isAdmin
-    });
+    //join user in room    
+    const join = await roomStore.joinUsersRoom(socket.room, socket.info);
+    // console.log(join);
+    //get usernum in room
     const usernum = await roomStore.getUsersNum(socket.room);
-    console.log(`usernum : ${usernum}`);
-
+    //get messages in room
     const messages = await roomStore.findMessagesForRoom(socket.room);
     //자신이 속한 room Set을 반환 Set은 socketId를 갖고 있음.
     // const clients = await io.in(socket.room).allSockets();
     // console.log("connected : "+socket.username+" Room #"+socket.room+" : "+clients.size);
     
+    //emit data for login client
     socket.emit('login', {
       usernum : usernum,
       messages : messages,
     });
-    
+    //emit data for other current client
     socket.to(socket.room).emit('user joined', {
       username : socket.username,
       userNum : usernum,
     });
   }
 
-  const newMessage = ({ user, content }) => {
+  const newMessage = ({content}) => {
     const now = new Date();
     var hours = now.getHours();
     var minutes = now.getMinutes();
     if(hours < 10){hours = "0" + hours;}
     if(minutes < 10){minutes = "0" + minutes;}
-    console.log(`${user.username} : ${content} in ${socket.room} on ${hours}:${minutes}`);
     // we tell the client to execute 'new message'
     const msg = {
-        user: {
-          username : socket.username,
-          profile : socket.profile,
-          isAdmin : socket.isAdmin
-        },
+        info : socket.info,
         timestamp : hours+":"+minutes,
         message: content
     }
+    console.log(JSON.stringify(msg));
     roomStore.saveMessages(socket.room, msg);
     socket.to(socket.room).emit('new message', msg);
   }
@@ -102,11 +96,7 @@ module.exports = async(io, socket) => {
 
   const disconnecting = async() => {
     console.log('disconnecting');
-    const result = await roomStore.leaveUsersRoom(socket.room, {
-      username : socket.username, 
-      profile : socket.profile, 
-      isAdmin : socket.isAdmin
-    });
+    const result = await roomStore.leaveUsersRoom(socket.room, socket.info);
     console.log(result);
   }
 
