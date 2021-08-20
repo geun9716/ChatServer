@@ -69,6 +69,12 @@ module.exports = async(io, socket) => {
     socket.to(socket.room).emit('new message', msg);
   }
 
+  const quit = () => {
+    const room = socket.room;
+    io.to(room).emit('quit');
+    io.disconnectSockets(room);
+  }
+
   const reconnect = (data) => {
     // we store the username in the socket session for this client
     socket.username = data.username;
@@ -123,6 +129,8 @@ module.exports = async(io, socket) => {
   socket.on('new message', newMessage);
 
   socket.on('reconnect', reconnect);
+
+  socket.on('quit', quit);
 
   //when the user disconnecting.. perform this
   socket.on('disconnecting', disconnecting);
