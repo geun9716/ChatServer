@@ -12,13 +12,9 @@ class RedisRoomStore extends RoomStore {
       this.redisClient = redisClient;
   }
 
-  createRoom = async({roomID, roomname, usernum = 0}) => {
-    console.log(roomID, roomname, usernum);
-    return await this.redisClient.hmset(`room:${roomID}`, {
-      "roomID" : roomID,
-      "roomname" : roomname,
-      "usernum" : usernum
-    });
+  createRoom = async(data) => {
+    console.log("CREATE ROOM : "+JSON.stringify(data));
+    return await this.redisClient.hmset(`room:${data.roomID}`, data);
   }
 
   findAllRoom = async() =>{

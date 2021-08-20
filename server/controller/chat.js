@@ -2,13 +2,14 @@ import redisClient from '../Loader/Redis';
 import httpStatus from 'http-status-codes';
 const { RedisRoomStore} = require('../Loader/roomStore');
 const roomStore = new RedisRoomStore(redisClient);
-
+const crypto = require("crypto");
+const randomId = () => crypto.randomBytes(8).toString("hex");
 // 게시글 조회
 const getAllRoom = async(req, res) => {
     try {
         const rooms = await roomStore.findAllRoom();
         res.status(httpStatus.OK).send(rooms.sort((a, b)=>{
-            return a.roomID - b.roomID;
+            return b.usernum - a.usernum;
         }));
     } catch(error) {
         console.error(error, "GET Room All api error")
@@ -20,6 +21,7 @@ const getRoom = async(req, res) => {
     let id = req.params.id;
     try {
         const room = await roomStore.findRoom(id);
+        console.log(JSON.stringify(room));
         if (room) {
             res.status(httpStatus.OK).send({
                 'success' : true,
@@ -40,10 +42,14 @@ const getRoom = async(req, res) => {
 
 const createRoom = async(req, res) => {
     const data = req.body;
+    data['roomID'] = randomId();
     try{
         const result = await roomStore.createRoom(data);
         console.log(result);
-        res.status(httpStatus.OK).send(result);
+        res.status(httpStatus.OK).send({
+            success:result=="OK"?true:false,
+            roomInfo : data
+        });
     } catch (error) {
         console.error(error, "CREATE Room api error")
         res.status(httpStatus.INTERNAL_SERVER_ERROR).send(error)
