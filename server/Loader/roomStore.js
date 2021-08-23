@@ -63,8 +63,13 @@ class RedisRoomStore extends RoomStore {
     return (result.constructor === Object && Object.keys(result).length===0)?false:result;
   }
 
-  deleteRoom = (id) => {
-    return this.redisClient.del(`room:${id}`);
+  deleteRoom = async(id) => {
+    return await Promise.all([this.redisClient.del(`room:${id}`), this.redisClient.del(`user:${id}`),this.redisClient.del(`msg:${id}`)])
+      .then((value)=>{
+        console.log(value);
+      }).catch((error)=>{
+        console.log(error);
+      });
   }
 
   findMessagesForRoom(roomID) {

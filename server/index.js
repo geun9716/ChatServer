@@ -45,7 +45,6 @@ const sessionCheck = async (socket, next) => {
   if (!username) {
     return next(new Error("invalid username"));
   }
-  console.log(mem_id);
   socket.sessionID = randomId();
   socket.userID = mem_id?mem_id:randomId();
   socket.username = username;

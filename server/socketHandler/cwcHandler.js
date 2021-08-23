@@ -1,10 +1,11 @@
+const fs = require('fs');
 const redisClient = require('../Loader/Redis');
 const { RedisSessionStore } = require("../Loader/sessionStore");
 const { RedisMessageStore } = require("../Loader/messageStore");
 const { RedisRoomStore} = require('../Loader/roomStore');
 const roomStore = new RedisRoomStore(redisClient);
 const sessionStore = new RedisSessionStore(redisClient);
-const messageStore = new RedisMessageStore(redisClient);
+
 
 module.exports = async(io, socket) => {
   // persist session
@@ -69,8 +70,22 @@ module.exports = async(io, socket) => {
     socket.to(socket.room).emit('new message', msg);
   }
 
-  const quit = () => {
+  const getUsers = async() => {
+    const users = await roomStore.getUsersRoom(socket.room);
+    console.log(users);
+    socket.emit('getUsers', users);
+  }
+
+  const quit = async() => {
     const room = socket.room;
+    const messages = await roomStore.findMessagesForRoom(room);
+    fs.writeFile(`files/room_${socket.room}.txt`, JSON.stringify(messages), (err)=>{
+      if(err) return console.log(err);
+      console.log(`files/room_${socket.room}.txt`);
+    });
+    console.log('')
+    roomStore.deleteRoom(room);
+    //quit
     io.to(room).emit('quit');
     io.disconnectSockets(room);
   }
@@ -127,6 +142,8 @@ module.exports = async(io, socket) => {
 
   // when the client emits 'new message', this listens and executes
   socket.on('new message', newMessage);
+
+  socket.on('getUsers', getUsers);
 
   socket.on('reconnect', reconnect);
 
