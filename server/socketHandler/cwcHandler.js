@@ -79,9 +79,9 @@ module.exports = async(io, socket) => {
   const quit = async() => {
     const room = socket.room;
     const messages = await roomStore.findMessagesForRoom(room);
-    fs.writeFile(`files/room_${socket.room}.txt`, JSON.stringify(messages), (err)=>{
+    fs.writeFile(`public/files/room_${socket.room}.txt`, JSON.stringify(messages), (err)=>{
       if(err) return console.log(err);
-      console.log(`files/room_${socket.room}.txt`);
+      console.log(`public/files/room_${socket.room}.txt`);
     });
     console.log('')
     roomStore.deleteRoom(room);
