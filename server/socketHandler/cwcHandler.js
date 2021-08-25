@@ -68,7 +68,7 @@ module.exports = async(io, socket) => {
     }
     console.log(JSON.stringify(msg));
     roomStore.saveMessages(socket.room, msg);
-    roomStore.updateRoom(socket.room, {timestamp:timestamp});
+    roomStore.updateRoom(socket.room, {updateTime:timestamp});
     socket.to(socket.room).emit('new message', msg);
   }
 
