@@ -57,6 +57,7 @@ module.exports = async(io, socket) => {
     const now = new Date();
     var hours = now.getHours();
     var minutes = now.getMinutes();
+    const timestamp = now.toISOString();
     if(hours < 10){hours = "0" + hours;}
     if(minutes < 10){minutes = "0" + minutes;}
     // we tell the client to execute 'new message'
@@ -67,6 +68,7 @@ module.exports = async(io, socket) => {
     }
     console.log(JSON.stringify(msg));
     roomStore.saveMessages(socket.room, msg);
+    roomStore.updateRoom(socket.room, {timestamp:timestamp});
     socket.to(socket.room).emit('new message', msg);
   }
 

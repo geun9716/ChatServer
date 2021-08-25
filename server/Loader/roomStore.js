@@ -17,6 +17,15 @@ class RedisRoomStore extends RoomStore {
     return await this.redisClient.hmset(`room:${data.roomID}`, data);
   }
 
+  async updateRoom (roomID, data) {
+    console.log(`UPDATE ROOM:${roomID} : ${JSON.stringify(data)}`);
+    const commands = [];
+    for(const [key, value] of Object.entries(data)){
+      commands.push(key, value);
+    }
+    return await this.redisClient.hmset(`room:${roomID}`, commands);
+  }
+
   findAllRoom = async() =>{
     //room키 가져오기
     const keys = new Set();

@@ -1,3 +1,5 @@
+const redisClient = require('../Loader/Redis');
+
 module.exports = (io, socket) => {
     let addedUser = false;
 
