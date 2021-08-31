@@ -1,7 +1,6 @@
 const fs = require('fs');
 const redisClient = require('../Loader/Redis');
 const { RedisSessionStore } = require("../Loader/sessionStore");
-const { RedisMessageStore } = require("../Loader/messageStore");
 const { RedisRoomStore} = require('../Loader/roomStore');
 const roomStore = new RedisRoomStore(redisClient);
 const sessionStore = new RedisSessionStore(redisClient);

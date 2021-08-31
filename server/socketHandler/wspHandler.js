@@ -1,5 +1,7 @@
+import db from '../Loader/db';
 const redisClient = require('../Loader/Redis');
-
+const { RedisWspStore} = require('../Loader/wspStore');
+const wspStore = new RedisWspStore(redisClient);
 module.exports = (io, socket) => {
     let addedUser = false;
 
@@ -14,14 +16,16 @@ module.exports = (io, socket) => {
         socket.join(socket.room);
         
         //io 서버에 생성된 rooms 를 보여줌.
-        //console.log(io.sockets.adapter.rooms); 
-        
+        //console.log(io.sockets.adapter.rooms);
+
         //자신이 속한 room Set을 반환 Set은 socketId를 갖고 있음.
         const clients = await io.in(socket.room).allSockets();
         console.log("connected : "+socket.username+" Room #"+socket.room+" : "+clients.size);
+        const messages = await wspStore.findMessagesForWsp(socket.room);
         const msg = {
             username : socket.username,
             userNum : clients.size,
+            messages : messages,
         }
         socket.emit('login', msg);
         socket.to(socket.room).emit('user joined', msg);
@@ -40,6 +44,7 @@ module.exports = (io, socket) => {
             timestamp : hours+":"+minutes,
             message: data
         }
+        wspStore.saveMessages(socket.room, msg);
         socket.to(socket.room).emit('new message', msg);
     }
 
@@ -70,6 +75,18 @@ module.exports = (io, socket) => {
         });
     }
 
+    const quit = async() => {
+        const wspID = socket.room;
+        const messages = await wspStore.findMessagesForWsp(wspID);
+        // console.log(JSON.stringify(messages));
+        const result = await db.query(`UPDATE cb_worship SET wsp_chat = ? WHERE wsp_id = ?;`, [JSON.stringify(messages), wspID]);
+        // console.log(result);
+        wspStore.deleteWsp(wspID);
+        //quit
+        io.to(wspID).emit('quit');
+        io.disconnectSockets(wspID);
+    }
+
     const disconnecting = () => {
 
     }
@@ -79,16 +96,16 @@ module.exports = (io, socket) => {
             //자신이 속한 room Set을 반환 Set은 socketId를 갖고 있음.
             // const clients = io.sockets.adapter.rooms.get(socket.room);
             io.in(socket.room).allSockets()
-            .then((clients)=>{
-                const data = {
-                username : socket.username,
-                userNum : clients.size,
-                };
-                if (clients)
-                console.log("disconnected : "+socket.username+" Room #"+socket.room+" : "+clients.size);
-                else
-                console.log("disconnected : "+socket.username+" Room #"+socket.room +" is Empty.");
-                socket.to(socket.room).emit('user left', data);
+                .then((clients)=>{
+                    const data = {
+                    username : socket.username,
+                    userNum : clients.size,
+                    };
+                    if (clients)
+                        console.log("disconnected : "+socket.username+" Room #"+socket.room+" : "+clients.size);
+                    else
+                        console.log("disconnected : "+socket.username+" Room #"+socket.room +" is Empty.");
+                    socket.to(socket.room).emit('user left', data);
             }); 
         }
     }
@@ -99,6 +116,8 @@ module.exports = (io, socket) => {
     socket.on('new message', newMessage);
 
     socket.on('reconnect', reconnect);
+
+    socket.on('quit', quit);
 
     //when the user disconnecting.. perform this
     socket.on('disconnecting', () => {
