@@ -33,8 +33,9 @@ const deleteWsp = async(req, res) => {
         if(err) return console.log(err);
             console.log(`public/files/wsp_${socket.room}.txt`);
         });
-        wspStore.deleteWsp(id);
-        res.status(httpStatus.OK).send({success: result?true:false, msg: result?`Delete Wsp ${id}`:`Can't find Wsp ${id}`});
+        const result = await wspStore.deleteWsp(id);
+
+        res.status(httpStatus.OK).send({success: result[0]?true:false, msg: result[0]?`Delete Wsp ${id}`:`Can't find Wsp ${id}`});
     } catch(error) {
         console.error(error, "DELETE Wsp api error")
         res.status(httpStatus.INTERNAL_SERVER_ERROR).send([])

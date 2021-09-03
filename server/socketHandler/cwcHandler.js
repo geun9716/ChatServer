@@ -1,3 +1,4 @@
+import db from '../Loader/db';
 const fs = require('fs');
 const redisClient = require('../Loader/Redis');
 const { RedisSessionStore } = require("../Loader/sessionStore");
@@ -79,16 +80,26 @@ module.exports = async(io, socket) => {
 
   const quit = async() => {
     const room = socket.room;
-    const messages = await roomStore.findMessagesForRoom(room);
-    fs.writeFile(`public/files/room_${socket.room}.txt`, JSON.stringify(messages), (err)=>{
-      if(err) return console.log(err);
-      console.log(`public/files/room_${socket.room}.txt`);
-    });
-    console.log('')
-    roomStore.deleteRoom(room);
-    //quit
-    io.to(room).emit('quit');
-    io.disconnectSockets(room);
+    console.log('quit');
+    const [roomInfo, messages] = await Promise.all([roomStore.findRoom(room), roomStore.findMessagesForRoom(room)]);
+    // const messages = await roomStore.findMessagesForRoom(room);
+    const input = {
+      roomname : roomInfo.roomname,
+      roomcontent : roomInfo.roomcontent,
+      admin : roomInfo.admin,
+      messages : messages
+    }
+    console.log(JSON.stringify(input));
+    
+    const result = await db.query(`INSERT into cb_chat (chat_log) VALUE (?)`, [JSON.stringify(input)]);
+    console.log(result.insertId);
+    
+    if (result.insertId){
+      roomStore.deleteRoom(room);
+      // //quit
+      io.to(room).emit('quit', {success : result.insertId?true:false, msg: "Delete and Save the chatlog"});
+      io.disconnectSockets(room);
+    }
   }
 
   const reconnect = (data) => {

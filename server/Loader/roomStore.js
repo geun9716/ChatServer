@@ -73,12 +73,7 @@ class RedisRoomStore extends RoomStore {
   }
 
   deleteRoom = async(id) => {
-    return await Promise.all([this.redisClient.del(`room:${id}`), this.redisClient.del(`user:${id}`),this.redisClient.del(`msg:${id}`)])
-      .then((value)=>{
-        console.log(value);
-      }).catch((error)=>{
-        console.log(error);
-      });
+    return await Promise.all([this.redisClient.del(`room:${id}`), this.redisClient.del(`user:${id}`),this.redisClient.del(`msg:${id}`)]);
   }
 
   findMessagesForRoom(roomID) {

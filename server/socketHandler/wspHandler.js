@@ -85,6 +85,7 @@ module.exports = (io, socket) => {
         //quit
         io.to(wspID).emit('quit');
         io.disconnectSockets(wspID);
+        console.log(`QUIT! worship : ${wspID}`);
     }
 
     const disconnecting = () => {
